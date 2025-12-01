@@ -9,12 +9,13 @@ import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.entity.EntityType;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
 import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.function.Predicate;
+
+import static com.bocktom.worldEditEntities.WorldEditEntitiesPlugin.plugin;
 
 public class WorldEditHelper {
 
@@ -43,6 +44,23 @@ public class WorldEditHelper {
 		}
 
 		CountedMap<Material> map = new CountedMap<>();
+
+		long start = System.currentTimeMillis();
+
+
+		ScheduleUtil.startJob(player.getUniqueId(), selection, blockState -> {
+			if (blockState instanceof TileState tileState && filter.test(tileState)) {
+				map.increment(tileState.getType());
+			}
+		}, () -> {
+
+
+			long end = System.currentTimeMillis();
+			double size = selection.getDimensions().length();
+			plugin.getLogger().info("Completed job (" + String.format("%.2f", size) + " blocks in " + (end - start) + " ms)");
+		});
+
+		/*
 		selection.forEach(vec -> {
 
 			Block block = world.getBlockAt(vec.x(), vec.y(), vec.z());
@@ -50,8 +68,12 @@ public class WorldEditHelper {
 
 			if (state instanceof TileState tileState && filter.test(tileState)) {
 				map.increment(tileState.getType());
-			}
+			} //1771ms bei 30MSPT
 		});
+		long end = System.currentTimeMillis();
+		double size = selection.getDimensions().length();
+		plugin.getLogger().info("Completed job (" + String.format("%.2f", size) + " blocks in " + (end - start) + " ms)");
+		map.clear();*/
 		return map.sortedByValueDescending();
 	}
 
