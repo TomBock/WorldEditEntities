@@ -1,4 +1,4 @@
-package com.bocktom.worldEditEntities;
+package com.bocktom.worldEditEntities.util;
 
 import com.sk89q.worldedit.world.entity.EntityType;
 import org.bukkit.block.Container;
@@ -7,6 +7,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.Mob;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -21,11 +22,15 @@ public class FilterUtil {
 		};
 	}
 
-	public static @NotNull Predicate<TileState> getBlockFilter(String filterRaw) {
-		return switch (filterRaw.toLowerCase(Locale.ROOT)) {
-			case "container" -> type -> type instanceof Container;
-			default -> type -> type.getType().name().equalsIgnoreCase(filterRaw);
-		};
+	public static @NotNull Predicate<String> getBlockFilter(String filterRaw) {
+		// Check for custom list
+		List<String> customList = Config.tileEntities.get.getStringList(filterRaw);
+		if(!customList.isEmpty()) {
+			return customList::contains;
+		}
+
+		// Check for specific types
+		return id -> id.equals(filterRaw);
 	}
 
 	public static <T> Predicate<T> getFilter(String filters, Function<String, Predicate<T>> getFilterFunction) {

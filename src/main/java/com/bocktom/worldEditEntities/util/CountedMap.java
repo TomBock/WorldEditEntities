@@ -1,4 +1,4 @@
-package com.bocktom.worldEditEntities;
+package com.bocktom.worldEditEntities.util;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

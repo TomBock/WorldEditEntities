@@ -1,8 +1,9 @@
 package com.bocktom.worldEditEntities;
 
+import com.bocktom.worldEditEntities.util.ChatUtil;
+import com.bocktom.worldEditEntities.util.CountedMap;
+import com.bocktom.worldEditEntities.util.FilterUtil;
 import com.sk89q.worldedit.world.entity.EntityType;
-import org.bukkit.Material;
-import org.bukkit.block.TileState;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -12,10 +13,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Predicate;
 
-import static com.bocktom.worldEditEntities.FilterUtil.getFilter;
+import static com.bocktom.worldEditEntities.util.FilterUtil.getFilter;
 
 public class CountEntitiesCommand implements CommandExecutor, TabCompleter {
 
@@ -27,36 +27,27 @@ public class CountEntitiesCommand implements CommandExecutor, TabCompleter {
 			return true;
 		}
 
-		String filterRaw = args.length > 0 ? args[0] : "";
 
 		// Entities
+		String filterRaw = args.length > 0 ? args[0] : ""; // empty filter are skipped for entities
 		Predicate<EntityType> entityFilter = getFilter(filterRaw, FilterUtil::getEntityFilter);
 		CountedMap<EntityType> entityCounts = WorldEditHelper.getEntitiesInSelection(player, entityFilter);
 
 		if(entityCounts.isEmpty()) {
 			player.sendMessage("§cNo entities found in the selected region or no region selected.");
 		} else {
-			//player.sendMessage("§e" + entityCounts.total + " §6Entities in your selection:");
-			//entityCounts.forEach((type, count) -> {
-			//	player.sendMessage("§a" + type.getName() + ": §e" + count);
-			//});
 			ChatUtil.sendTable(player, "Entities", entityCounts, type -> type.getName().replace("minecraft:", ""));
 		}
 
 		// Tile Entities
-
-		Predicate<TileState> blockFilter = getFilter(filterRaw, FilterUtil::getBlockFilter);
-		CountedMap<Material> blockCounts = WorldEditHelper.getBlockTypesInSelection(player, blockFilter);
+		Predicate<String> defaultBlockFilter = FilterUtil.getBlockFilter("tile_entities"); // always active
+		Predicate<String> blockFilter = defaultBlockFilter.and(getFilter(filterRaw, FilterUtil::getBlockFilter));
+		CountedMap<String> blockCounts = WorldEditHelper.getBlockTypesInSelection(player, blockFilter);
 		if(blockCounts.isEmpty()) {
 			player.sendMessage("§cNo blocks found in the selected region or no region selected.");
 		} else {
-			ChatUtil.sendTable(player, "Tile Entities", blockCounts, type -> type.name().toLowerCase(Locale.ROOT));
-			//player.sendMessage("§e" + blockCounts.total + " §6Tile Entities in your selection:");
-			//blockCounts.forEach((material, count) -> {
-			//	player.sendMessage("§a" + material.name() + ": §e" + count);
-			//});
+			ChatUtil.sendTable(player, "Tile Entities", blockCounts, type -> type.replace("minecraft:", ""));
 		}
-
 
 		return true;
 	}

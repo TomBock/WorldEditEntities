@@ -1,5 +1,8 @@
 package com.bocktom.worldEditEntities;
 
+import com.bocktom.worldEditEntities.util.AsyncWorldEditScanUtil;
+import com.bocktom.worldEditEntities.util.Config;
+import com.bocktom.worldEditEntities.util.CountedMap;
 import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -8,7 +11,6 @@ import com.sk89q.worldedit.entity.Entity;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.entity.EntityType;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.block.TileState;
 import org.bukkit.entity.Player;
 
@@ -35,45 +37,28 @@ public class WorldEditHelper {
 		return map.sortedByValueDescending();
 	}
 
-	public static CountedMap<Material> getBlockTypesInSelection(Player player, Predicate<TileState> filter) {
-		org.bukkit.World world = player.getWorld();
+	public static CountedMap<String> getBlockTypesInSelection(Player player, Predicate<String> filter) {
 		Region selection = getSelection(player);
 
 		if (selection == null) {
 			return CountedMap.empty();
 		}
 
-		CountedMap<Material> map = new CountedMap<>();
+		CountedMap<String> map = new CountedMap<>();
 
 		long start = System.currentTimeMillis();
 
+		AsyncWorldEditScanUtil.startJob(player, selection, id -> {
 
-		ScheduleUtil.startJob(player.getUniqueId(), selection, blockState -> {
-			if (blockState instanceof TileState tileState && filter.test(tileState)) {
-				map.increment(tileState.getType());
+			if(filter.test(id)) {
+				map.increment(id);
 			}
 		}, () -> {
-
-
 			long end = System.currentTimeMillis();
 			double size = selection.getDimensions().length();
 			plugin.getLogger().info("Completed job (" + String.format("%.2f", size) + " blocks in " + (end - start) + " ms)");
 		});
 
-		/*
-		selection.forEach(vec -> {
-
-			Block block = world.getBlockAt(vec.x(), vec.y(), vec.z());
-			org.bukkit.block.BlockState state = block.getState();
-
-			if (state instanceof TileState tileState && filter.test(tileState)) {
-				map.increment(tileState.getType());
-			} //1771ms bei 30MSPT
-		});
-		long end = System.currentTimeMillis();
-		double size = selection.getDimensions().length();
-		plugin.getLogger().info("Completed job (" + String.format("%.2f", size) + " blocks in " + (end - start) + " ms)");
-		map.clear();*/
 		return map.sortedByValueDescending();
 	}
 

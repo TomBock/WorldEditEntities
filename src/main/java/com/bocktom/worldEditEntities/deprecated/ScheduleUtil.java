@@ -1,23 +1,13 @@
-package com.bocktom.worldEditEntities;
+package com.bocktom.worldEditEntities.deprecated;
 
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector2;
-import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
-import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.entity.Player;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
-
-import static com.bocktom.worldEditEntities.WorldEditEntitiesPlugin.plugin;
 
 public class ScheduleUtil {
 
@@ -27,24 +17,22 @@ public class ScheduleUtil {
 
 	private static class Job {
 		public int taskId = 0;
-		public Iterator<BlockVector2> chunkIterator;
-		public int chunksProcessed = 0;
-		public Region selection;
-		public World world;
-		public Player player;
+		public UUID world;
 
-		public Job(Region selection, World world, Player player, int taskId) {
-			this.selection = selection;
+		public int chunkIndex = 0;
+		public List<BlockVector2> chunks;
+
+		public Job(List<BlockVector2> chunks, UUID world, int taskId) {
+			this.chunks = chunks;
 			this.world = world;
-			this.player = player;
 			this.taskId = taskId;
-			this.chunkIterator = selection.getChunks().iterator();
 		}
 	}
 
 	public static void startJob(UUID owner, Region selectedRegion, Consumer<BlockState> consumer, Runnable onComplete) {
 		World world = BukkitAdapter.adapt(selectedRegion.getWorld());
 
+		/*
 		int taskId = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
 			Job job = jobs.get(owner);
 
@@ -64,13 +52,13 @@ public class ScheduleUtil {
 
 
 			// process a chunk
-			BlockVector3 min = job.selection.getMinimumPoint();
-			BlockVector3 max = job.selection.getMaximumPoint();
+			BlockVector3 min = job.chunks.getMinimumPoint();
+			BlockVector3 max = job.chunks.getMaximumPoint();
 
 			// process up to BATCH_SIZE chunks per tick
 			do {
 				BlockVector2 chunk = job.chunkIterator.next();
-				job.player.sendActionBar(Component.text("§7Processing chunks: §e" + job.chunksProcessed + " / " + job.selection.getChunks().size()));
+				job.player.sendActionBar(Component.text("§7Processing chunks: §e" + job.chunksProcessed + " / " + job.chunks.getChunks().size()));
 
 				job.world.getChunkAtAsync(chunk.x(), chunk.z()).thenAccept(loadedChunk -> {
 
@@ -109,9 +97,9 @@ public class ScheduleUtil {
 			} while (job.chunkIterator.hasNext() && job.chunksProcessed % BATCH_SIZE != 0);
 
 		}, 0L, TICKS_BETWEEN_BATCHES).getTaskId();
-
 		Job job = new Job(selectedRegion, world, Bukkit.getPlayer(owner), taskId);
 		jobs.put(owner, job);
+*/
 	}
 
 }

@@ -1,4 +1,4 @@
-package com.bocktom.worldEditEntities;
+package com.bocktom.worldEditEntities.util;
 
 import org.bukkit.entity.Player;
 
