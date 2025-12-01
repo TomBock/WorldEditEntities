@@ -6,6 +6,12 @@ commands:
   /countentities:
     description: Count entities in the selected region.
     usage: /countentities
+  /countall:
+    description: Count all entities and tile entities in the world.
+    usage: /countall
+  /counttileentities:
+    description: Count tile entities in the selected region.
+    usage: /counttileentities
 permissions:
   worldeditentities.count:
     description: Allows the use of /countentities command.

@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 public class CountedMap <T> extends LinkedHashMap<T, Integer> {
 	public int total;
+	public long lookupTimeMs;
 
 	@Override
 	public Integer put(T key, Integer value) {

@@ -1,8 +1,6 @@
 package com.bocktom.worldEditEntities.util;
 
 import com.sk89q.worldedit.world.entity.EntityType;
-import org.bukkit.block.Container;
-import org.bukkit.block.TileState;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Mob;
 import org.jetbrains.annotations.NotNull;
@@ -18,7 +16,7 @@ public class FilterUtil {
 		return switch (filterRaw.toLowerCase(Locale.ROOT)) {
 			case "mobs" -> type -> type instanceof Mob;
 			case "items" -> type -> type instanceof Item;
-			default -> type -> type.getName().replace("minecraft:", "").equalsIgnoreCase(filterRaw);
+			default -> type -> type.getName().replace("minecraft:", "").toLowerCase(Locale.ROOT).equals(filterRaw);
 		};
 	}
 
@@ -30,18 +28,18 @@ public class FilterUtil {
 		}
 
 		// Check for specific types
-		return id -> id.equals(filterRaw);
+		return id -> id.replace("minecraft:", "").equals(filterRaw);
 	}
 
-	public static <T> Predicate<T> getFilter(String filters, Function<String, Predicate<T>> getFilterFunction) {
+	public static <T> Predicate<T> getFilter(String[] filters, Function<String, Predicate<T>> getFilterFunction) {
 		Predicate<T> filterFull = t -> false;
 
-		if(filters.isBlank()) {
+		if(filters.length == 0) {
 			filterFull = t -> true;
 			return filterFull;
 		}
 
-		for (String filterRaw : filters.split(",")) {
+		for (String filterRaw : filters) {
 			if(filterRaw.isBlank()) {
 				continue;
 			}
