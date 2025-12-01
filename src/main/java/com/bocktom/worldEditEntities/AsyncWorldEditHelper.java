@@ -34,6 +34,7 @@ public class AsyncWorldEditHelper {
 		if(selection == null) {
 			return CompletableFuture.completedFuture(CountedMap.empty());
 		}
+
 		long start = System.currentTimeMillis();
 		player.sendMessage("§7Starting entity scan in " + selection.getChunks().size() + " §7chunks...");
 
@@ -44,8 +45,10 @@ public class AsyncWorldEditHelper {
 				.filter(entity -> filter.test(entity.getType()))
 				.forEach(entity -> map.increment(entity.getType()));
 
-		map.lookupTimeMs = System.currentTimeMillis() - start;
-		return CompletableFuture.completedFuture(map.sortedByValueDescending());
+		return CompletableFuture.completedFuture(map.sortedByValueDescending())
+				.whenComplete((result, error) -> {
+					result.lookupTimeMs = System.currentTimeMillis() - start;
+				});
 	}
 
 	public static CompletableFuture<CountedMap<String>> countBlockTypesAsync(Player player, Predicate<String> filter) {
@@ -104,7 +107,6 @@ public class AsyncWorldEditHelper {
 			future.complete(map.sortedByValueDescending());
 		}).getTaskId();
 		blockScanTasks.put(owner, taskId);
-
 
 		return future.whenComplete((result, error) -> {
 			blockScanTasks.remove(owner);

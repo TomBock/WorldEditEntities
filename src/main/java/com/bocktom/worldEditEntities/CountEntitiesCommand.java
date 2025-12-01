@@ -2,6 +2,7 @@ package com.bocktom.worldEditEntities;
 
 import com.bocktom.worldEditEntities.util.ChatUtil;
 import com.bocktom.worldEditEntities.util.Config;
+import com.bocktom.worldEditEntities.util.CountedMap;
 import com.bocktom.worldEditEntities.util.FilterUtil;
 import com.sk89q.worldedit.world.entity.EntityType;
 import com.sk89q.worldedit.world.registry.EntityRegistry;
@@ -32,25 +33,37 @@ public class CountEntitiesCommand implements CommandExecutor, TabCompleter {
 			return true;
 		}
 
-		if(cmd.getName().equals("/countentities")) {
-			countEntities(player, args);
-		} else if(cmd.getName().equals("/counttileentities")) {
-			countTileEntities(player, args);
-		} else if(cmd.getName().equals("/countall")) {
-			countEntities(player, args);
-			countTileEntities(player, args);
-		} else if(cmd.getName().equals("/countstop")) {
-			AsyncWorldEditHelper.cancelBlockScanTask(player);
-			sender.sendMessage("§7Cancelled any ongoing block scan tasks.");
-		} else {
-			sender.sendMessage("Unknown command.");
-			return true;
+		switch (cmd.getName()) {
+			case "/countentities" -> count(player, args, true);
+			case "/counttileentities" -> count(player, args, false);
+			case "/countall" -> {
+				count(player, args, true);
+				count(player, args, false);
+			}
+			case "/countstop" -> {
+				AsyncWorldEditHelper.cancelBlockScanTask(player);
+				sender.sendMessage("§7Cancelled any ongoing block scan tasks.");
+			}
+			default -> {
+				sender.sendMessage("Unknown command.");
+				return true;
+			}
 		}
 
 		return true;
 	}
 
-	private void countEntities(Player player, @NotNull String[] args) {
+	private void count(Player player, String[] args, boolean entity) {
+
+		if(entity) {
+			countEntities(player, args);
+		} else {
+			countTileEntities(player, args);
+		}
+	}
+
+	private void countEntities(Player player, String[] args) {
+
 		Predicate<EntityType> entityFilter = getFilter(args, FilterUtil::getEntityFilter);
 		AsyncWorldEditHelper.countEntitiesAsync(player, entityFilter)
 				.thenAccept(map -> {
@@ -60,12 +73,14 @@ public class CountEntitiesCommand implements CommandExecutor, TabCompleter {
 					if(map.isEmpty()) {
 						player.sendMessage("§cNo entities found in the selected region or no region selected.");
 					} else {
-						ChatUtil.sendTable(player, "Entities", map, type -> type.getName().replace("minecraft:", ""));
+						map.keyFormatter = type -> type.getName().replace("minecraft:", "");
+						ChatUtil.sendTable(player, map, "Entities", args);
 					}
 				});
 	}
 
-	private void countTileEntities(Player player, @NotNull String[] args) {
+	private void countTileEntities(Player player, String[] args) {
+
 		Predicate<String> defaultBlockFilter = FilterUtil.getBlockFilter("tile_entities"); // always active
 		Predicate<String> blockFilter = defaultBlockFilter.and(getFilter(args, FilterUtil::getBlockFilter));
 		AsyncWorldEditHelper.countBlockTypesAsync(player, blockFilter)
@@ -76,11 +91,11 @@ public class CountEntitiesCommand implements CommandExecutor, TabCompleter {
 					if(map.isEmpty()) {
 						player.sendMessage("§cNo blocks found in the selected region or no region selected.");
 					} else {
-						ChatUtil.sendTable(player, "Tile Entities", map, id -> id.replace("minecraft:", ""));
+						map.keyFormatter = id -> id.replace("minecraft:", "");
+						ChatUtil.sendTable(player, map, "Tile Entities", args);
 					}
 				});
 	}
-
 
 	@Override
 	public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String s, @NotNull String @NotNull [] args) {
