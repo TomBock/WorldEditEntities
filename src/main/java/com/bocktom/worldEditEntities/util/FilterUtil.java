@@ -12,7 +12,7 @@ import java.util.function.Predicate;
 
 public class FilterUtil {
 
-	public static @NotNull Predicate<EntityType> getEntityFilter(String filterRaw) {
+	public static Predicate<EntityType> getEntityFilter(String filterRaw) {
 		return switch (filterRaw.toLowerCase(Locale.ROOT)) {
 			case "mobs" -> type -> type instanceof Mob;
 			case "items" -> type -> type instanceof Item;
@@ -20,7 +20,7 @@ public class FilterUtil {
 		};
 	}
 
-	public static @NotNull Predicate<String> getBlockFilter(String filterRaw) {
+	public static Predicate<String> getBlockFilter(String filterRaw) {
 		// Check for custom list
 		List<String> customList = Config.tileEntities.get.getStringList(filterRaw).stream()
 				.map(raw -> {
@@ -44,15 +44,16 @@ public class FilterUtil {
 		}
 	}
 
-	public static <T> Predicate<T> getFilter(String[] filters, Function<String, Predicate<T>> getFilterFunction) {
+	public static <T> Predicate<T> collectFilters(String filterArg, Function<String, Predicate<T>> getFilterFunction) {
 		Predicate<T> filterFull = t -> false;
 
-		if(filters.length == 0) {
+
+		if(filterArg.isEmpty()) {
 			filterFull = t -> true;
 			return filterFull;
 		}
 
-		for (String filterRaw : filters) {
+		for (String filterRaw : filterArg.split(",")) {
 			if(filterRaw.isBlank()) {
 				continue;
 			}

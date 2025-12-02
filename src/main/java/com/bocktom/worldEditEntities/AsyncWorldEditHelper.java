@@ -2,21 +2,21 @@ package com.bocktom.worldEditEntities;
 
 import com.bocktom.worldEditEntities.util.ChatUtil;
 import com.bocktom.worldEditEntities.util.CountedMap;
+import com.sk89q.worldedit.EmptyClipboardException;
+import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.entity.Entity;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -29,11 +29,7 @@ public class AsyncWorldEditHelper {
 	private static final Map<UUID, Integer> blockScanTasks = new ConcurrentHashMap<>();
 	private static final Set<UUID> cancelledTasks = new ConcurrentSkipListSet<>();
 
-	public static CompletableFuture<CountedMap<EntityType>> countEntitiesAsync(Player player, Predicate<EntityType> filter) {
-		Region selection = getSelection(player);
-		if(selection == null) {
-			return CompletableFuture.completedFuture(CountedMap.empty());
-		}
+	public static CompletableFuture<CountedMap<EntityType>> countEntitiesAsync(Player player, Region selection, Predicate<EntityType> filter) {
 
 		long start = System.currentTimeMillis();
 		player.sendMessage("§7Starting entity scan in " + selection.getChunks().size() + " §7chunks...");
@@ -51,11 +47,7 @@ public class AsyncWorldEditHelper {
 				});
 	}
 
-	public static CompletableFuture<CountedMap<String>> countBlockTypesAsync(Player player, Predicate<String> filter) {
-		Region selection = getSelection(player);
-		if (selection == null) {
-			return CompletableFuture.completedFuture(CountedMap.empty());
-		}
+	public static CompletableFuture<CountedMap<String>> countBlockTypesAsync(Player player, Region selection, Predicate<String> filter) {
 		// Setup
 		CompletableFuture<CountedMap<String>> future = new CompletableFuture<>();
 		CountedMap<String> map = CountedMap.empty();
@@ -114,25 +106,6 @@ public class AsyncWorldEditHelper {
 		});
 	}
 
-	private static Region getSelection(Player player) {
-		WorldEdit we = WorldEdit.getInstance();
-		BukkitPlayer wePlayer = BukkitAdapter.adapt(player);
-		LocalSession session = we.getSessionManager().getIfPresent(wePlayer);
-		if(session == null) {
-			return null;
-		}
-
-		if(session.getSelectionWorld() == null) {
-			return null;
-		}
-
-		Region selection = session.getSelection();
-
-		if(selection == null || selection.getWorld() == null)
-			return null;
-		return selection;
-	}
-
 	public static void cancelBlockScanTask(Player player) {
 		UUID owner = player.getUniqueId();
 		if(blockScanTasks.containsKey(owner)) {
@@ -140,5 +113,53 @@ public class AsyncWorldEditHelper {
 			blockScanTasks.remove(owner);
 			cancelledTasks.add(owner);
 		}
+	}
+
+	public static Optional<Region> getSelectionOrUserRange(Player player, String[] args) {
+		String userArg = null;
+		int rangeArg = 5;
+		for (String arg : args) {
+			if(arg.startsWith("user=")) {
+				userArg = arg.substring("user=".length());
+			}
+			if(arg.startsWith("range=")) {
+				try {
+					rangeArg = Integer.parseInt(arg.substring("range=".length()));
+				} catch (NumberFormatException e) {
+					rangeArg = 20;
+				}
+			}
+		}
+		// Use own selection if no user specified
+		if (userArg == null || Bukkit.getPlayer(userArg) == null) {
+			return getSelection(player);
+		}
+
+		Player target = Bukkit.getPlayer(userArg);
+		BlockVector3 min = BukkitAdapter.asBlockVector(target.getLocation()).subtract(rangeArg, rangeArg, rangeArg);
+		BlockVector3 max = BukkitAdapter.asBlockVector(target.getLocation()).add(rangeArg, rangeArg, rangeArg);
+
+		return Optional.of(new CuboidRegion(BukkitAdapter.adapt(target.getWorld()), min, max));
+	}
+
+	private static Optional<Region> getSelection(Player player) {
+		WorldEdit we = WorldEdit.getInstance();
+		BukkitPlayer wePlayer = BukkitAdapter.adapt(player);
+		LocalSession session = we.getSessionManager().getIfPresent(wePlayer);
+		if(session == null) {
+			return Optional.empty();
+		}
+
+		if(session.getSelectionWorld() == null) {
+			return Optional.empty();
+		}
+
+		try {
+			session.getSelection();
+		} catch (IncompleteRegionException e) {
+			return Optional.empty();
+		}
+
+		return Optional.of(session.getSelection());
 	}
 }

@@ -1,41 +1,16 @@
 package com.bocktom.worldEditEntities.util;
 
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
-import java.util.function.Function;
 
 public class ChatUtil {
 
 	private static final int TABLE_PAGE_HEIGHT = 8;
 
-	public static <T> void sendTable(Player player,
-									 CountedMap<T> map,
-									 String title,
-									 String[] args) {
-		int page = getPageFromArgs(args);
-
-		sendTablePaged(player, map, page, title);
-	}
-
-	private static int getPageFromArgs(String[] args) {
-		for (String arg : args) {
-			if(arg.startsWith("page=")) {
-				try {
-					return Integer.parseInt(arg.substring("page=".length()));
-				} catch (NumberFormatException e) {
-					return 1;
-				}
-			}
-		}
-		return 1;
-	}
-
-	private static <T> void sendTablePaged(Player player,
+	public static <T> void sendTablePaged(Player player,
 										   CountedMap<T> map,
 										   int page,
 										   String title) {
